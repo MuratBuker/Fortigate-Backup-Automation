@@ -1,0 +1,69 @@
+---
+### First Play: Gather date/time from localhost
+- name: Gather date/time on localhost
+  hosts: localhost
+  gather_facts: true
+  tasks:
+    - name: Set date and time facts for use in Fortigate tasks
+      set_fact:
+        backup_date: "{{ ansible_date_time.date }}"
+        backup_time: "{{ ansible_date_time.time }}"
+
+### Second Play: Fortigate backup using date/time from localhost
+- name: Fortigate Backup
+  hosts: fortigate
+  connection: httpapi
+  gather_facts: false
+  vars:
+    dest_path: "/root/{{ datacenter }}"
+    folder: "{{ dest_path }}/{{ inventory_hostname }}/{{ hostvars['localhost']['backup_date'] }}"
+    filename: "{{ folder }}/backup_{{ hostvars['localhost']['backup_date'] }}_{{ hostvars['localhost']['backup_time'] }}.yaml"
+    latest_file: "{{ dest_path }}/{{ inventory_hostname }}/latest/latest.yaml"
+  collections:
+    - fortinet.fortios
+  tasks:
+
+    - name: Creating backup folder if it does not exist
+      file:
+        path: "{{ folder }}"
+        mode: 0775
+        owner: root
+        group: root
+        state: directory
+      delegate_to: localhost
+
+    - name: Creating fortigate diff directory if it does not exist
+      file:
+        path: "{{ dest_path }}/{{ inventory_hostname }}/latest/"
+        state: directory
+        owner: root
+        group: root
+        mode: 0775
+      delegate_to: localhost
+
+    - name: Backing up Fortigate firewalls
+      fortios_monitor:
+        access_token: "{{ fortios_access_token }}"
+        selector: 'backup.system.config'
+        params:
+          scope: 'global'
+          password_mask: True
+          file_format: "yaml"
+      register: backupinfo
+
+    - name: Saving the Fortigate backups to local directory
+      copy:
+        content: '{{ backupinfo.meta.raw }}'
+        dest: "{{ filename }}"
+
+    - name: Comparing latest and new Fortigate config files
+      shell: diff "{{ filename }}" "{{ latest_file }}" > "{{ dest_path }}/{{ inventory_hostname }}/latest/compared.yaml"
+      register: diff_output
+      ignore_errors: true
+      changed_when: diff_output.rc == 1
+      failed_when: diff_output.rc > 1
+      delegate_to: localhost
+
+    - name: Updating latest Fortigate config file to compare with next backup
+      command: cp "{{ filename }}" "{{ latest_file }}"
+      delegate_to: localhost
