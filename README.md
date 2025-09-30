@@ -101,6 +101,7 @@ This command will execute the playbook and create backup files for each Fortigat
 ### Playbook Variables
 
 You can change below variables in the playbook as per your requirements.
+
 ~~~bash
   vars:
     dest_path: "/root/{{ datacenter }}"
@@ -108,7 +109,6 @@ You can change below variables in the playbook as per your requirements.
     filename: "{{ folder }}/backup_{{ hostvars['localhost']['backup_date'] }}_{{ hostvars['localhost']['backup_time'] }}.yaml"
     latest_file: "{{ dest_path }}/{{ inventory_hostname }}/latest/latest.yaml"
 ~~~
-
 
 - dest_path: // Base directory where backups will be stored. You can customize it using the datacenter variable.
 - folder: // Directory structure for each backup, organized by device hostname and date.
@@ -124,3 +124,19 @@ In brief, the playbook first checks for the existence of the backup directories 
 Then, it uses the Fortigate API to take a backup and saves it as **latest**. It also compares the new backup with the previous one and stores the differences in a **compare** file. This way, you can easily see the changes between configurations.
 
 It backs up all VDOMs on the Fortigate. If desired, you can filter specific VDOMs or mask passwords in the backup. However, if masking is applied, the backup file cannot be directly uploaded in case of an issue.  
+
+## Callback Plugin for Email Notifications
+
+- The repository includes a custom callback plugin (`email_playbook_results.py`) that sends email notifications with the results of playbook executions.
+- Update the email addresses and SMTP server details in the plugin as needed.
+- Ensure that the callback plugin is placed in the `callback_plugins` directory and that Ansible is configured to use it.
+
+## Security Considerations
+
+- Ensure that sensitive information such as passwords and API keys are managed securely, using Ansible Vault or environment variables.
+- Regularly update Ansible and related dependencies to mitigate security vulnerabilities.
+- Use secure methods for storing and transmitting backup files, especially if they contain sensitive configuration data.
+
+## Contributions
+
+Contributions to enhance the playbook or add new features are welcome. Please fork the repository and submit a pull request with your changes.
