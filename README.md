@@ -36,7 +36,7 @@ Contents to be written inside the config file:
 [defaults]
 inventory = inventory.yaml
 private_key_file = ~/.ssh/id_ed25519
-host_key_checking = False
+callback_whitelist = email_playbook_results
 ~~~
 
 We will create the necessary Inventory files for Ansible Playbooks.
