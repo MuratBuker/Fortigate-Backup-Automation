@@ -128,8 +128,10 @@ It backs up all VDOMs on the Fortigate. If desired, you can filter specific VDOM
 ## Callback Plugin for Email Notifications
 
 - The repository includes a custom callback plugin (`email_playbook_results.py`) that sends email notifications with the results of playbook executions.
-- Update the email addresses and SMTP server details in the plugin as needed.
 - Ensure that the callback plugin is placed in the `callback_plugins` directory and that Ansible is configured to use it.
+- Update the email addresses and SMTP server details in the plugin (`email_playbook_results.py`) as needed.
+
+
 
 ## Security Considerations
 
