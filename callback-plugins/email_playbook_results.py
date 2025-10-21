@@ -1,7 +1,7 @@
 import smtplib
 from email.mime.text import MIMEText
-from ansible.plugins.callback import CallbackBase  # type: ignore
-from ansible.utils.display import Display  # type: ignore
+from ansible.plugins.callback import CallbackBase #type: ignore
+from ansible.utils.display import Display #type: ignore
 
 display = Display()
 
