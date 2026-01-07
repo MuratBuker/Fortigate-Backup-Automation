@@ -15,7 +15,12 @@ class CallbackModule(CallbackBase):
         self.results = ""
 
     def _is_relevant_task(self, task_name: str) -> bool:
-        return "Backing up" in task_name
+        keywords = (
+            "Backing up",
+            "Differences detected",
+            "Print Fortigate config differences",
+        )
+        return any(k in task_name for k in keywords)
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         task_name = task.get_name()
@@ -27,6 +32,11 @@ class CallbackModule(CallbackBase):
         if self._is_relevant_task(task_name):
             hostname = result._host.get_name()
             self.results += f"Task succeeded on {hostname}: {task_name}\n"
+
+            # ⬇️ Capture handler/debug output if present
+            msg = result._result.get("msg")
+            if msg:
+                self.results += f"{msg}\n\n"
 
     def v2_runner_on_failed(self, result, ignore_errors=False):
         task_name = result._task.get_name()
@@ -42,13 +52,19 @@ class CallbackModule(CallbackBase):
         subject = "Ansible Playbook Results"
         msg = MIMEText(body)
         msg["Subject"] = "Ansible Notification - Fortigate Backup Automation"
-        msg["From"] = "FROM-ADDRESS"
-        smtp_server = "SMTP-SERVER-IP"
-        smtp_port = "SMTP-SERVER-PORT"
+        msg["From"] = "cloudnotification@glasshouse.com.tr"
+        smtp_server = "172.21.0.61"
+        smtp_port = "26589"
         recipients = [
-            "RECEIVER-ADDRESS-1",
-            "RECEIVER-ADDRESS-2",
+            "GHDesign&PlanningTeam@glasshouse.com.tr",
+            "baris.serbes@glasshouse.com.tr",
+            "GHNetSecTeam@glasshouse.com.tr",
+            "burak.cetinkaya@glasshouse.com.tr",
+            "emrah.bayarcelik@glasshouse.com.tr",
+            "sevilay.kurt@glasshouse.com.tr",
+            "lutfi.yunusoglu@glasshouse.com.tr",
         ]
+
         msg["To"] = ", ".join(recipients)
 
         try:

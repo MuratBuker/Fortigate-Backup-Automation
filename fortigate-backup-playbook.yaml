@@ -21,49 +21,65 @@
     latest_file: "{{ dest_path }}/{{ inventory_hostname }}/latest/latest.yaml"
   collections:
     - fortinet.fortios
-  tasks:
 
+  tasks:
     - name: Creating backup folder if it does not exist
       file:
         path: "{{ folder }}"
-        mode: 0775
-        owner: root
-        group: root
         state: directory
+        mode: 0775
       delegate_to: localhost
 
     - name: Creating fortigate diff directory if it does not exist
       file:
-        path: "{{ dest_path }}/{{ inventory_hostname }}/latest/"
+        path: "{{ dest_path }}/{{ inventory_hostname }}/latest"
         state: directory
-        owner: root
-        group: root
         mode: 0775
       delegate_to: localhost
 
     - name: Backing up Fortigate firewalls
       fortios_monitor:
         access_token: "{{ fortios_access_token }}"
-        selector: 'backup.system.config'
+        selector: backup.system.config
         params:
-          scope: 'global'
-          password_mask: True
-          file_format: "yaml"
+          scope: global
+          password_mask: true
+          file_format: yaml
       register: backupinfo
 
-    - name: Saving the Fortigate backups to local directory
+    - name: Save Fortigate backup to file
       copy:
-        content: '{{ backupinfo.meta.raw }}'
+        content: "{{ backupinfo.meta.raw }}"
         dest: "{{ filename }}"
+        mode: 0644
+      delegate_to: localhost
 
-    - name: Comparing latest and new Fortigate config files
-      shell: diff "{{ filename }}" "{{ latest_file }}" > "{{ dest_path }}/{{ inventory_hostname }}/latest/compared.yaml"
+    - name: Compare Fortigate configs (ignore conf_file_ver)
+      shell: |
+        set -o pipefail
+        diff -I '^#conf_file_ver=' "{{ filename }}" "{{ latest_file }}" \
+          | tee "{{ dest_path }}/{{ inventory_hostname }}/latest/compared.yaml"
+      args:
+        executable: /bin/bash
       register: diff_output
       ignore_errors: true
       changed_when: diff_output.rc == 1
       failed_when: diff_output.rc > 1
       delegate_to: localhost
+      notify: Print Fortigate config differences
 
-    - name: Updating latest Fortigate config file to compare with next backup
-      command: cp "{{ filename }}" "{{ latest_file }}"
+    - name: Update latest Fortigate config
+      copy:
+        src: "{{ filename }}"
+        dest: "{{ latest_file }}"
+        mode: 0644
       delegate_to: localhost
+      when: diff_output.rc in [0, 1]
+
+  handlers:
+    - name: Print Fortigate config differences
+      debug:
+        msg: |
+          Differences detected for {{ inventory_hostname }}:
+          {{ diff_output.stdout }}
+      when: diff_output.rc == 1
