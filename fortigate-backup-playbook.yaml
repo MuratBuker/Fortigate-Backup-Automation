@@ -43,7 +43,7 @@
         selector: backup.system.config
         params:
           scope: global
-          password_mask: true
+          password_mask: false
           file_format: yaml
       register: backupinfo
 
@@ -54,11 +54,11 @@
         mode: 0644
       delegate_to: localhost
 
-    - name: Compare Fortigate configs (ignore conf_file_ver)
+    - name: Compare Fortigate configs (ignore version and passwords)
       shell: |
-        set -o pipefail
-        diff -I '^#conf_file_ver=' "{{ filename }}" "{{ latest_file }}" \
-          | tee "{{ dest_path }}/{{ inventory_hostname }}/latest/compared.yaml"
+          set -o pipefail
+          diff -I '^#conf_file_ver=' -I 'password: ENC' "{{ filename }}" "{{ latest_file }}" \
+            | tee "{{ dest_path }}/{{ inventory_hostname }}/latest/compared.yaml"
       args:
         executable: /bin/bash
       register: diff_output
