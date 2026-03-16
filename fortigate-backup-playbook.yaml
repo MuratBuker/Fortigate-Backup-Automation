@@ -57,7 +57,16 @@
     - name: Compare Fortigate configs (ignore version and passwords)
       shell: |
           set -o pipefail
-          diff -I '^#conf_file_ver=' -I 'password: ENC' "{{ filename }}" "{{ latest_file }}" \
+          strip_noise() {
+            grep -v -E \
+              -e '^#conf_file_ver=' \
+              -e 'ENC [A-Za-z0-9+/]' \
+              -e '^[[:space:]]*MII[A-Za-z0-9+/]' \
+              -e '^[[:space:]]*[A-Za-z0-9+/]{6,}={1,2}[[:space:]]*$' \
+              -e '^[[:space:]]*[A-Za-z0-9+/]{20,}[[:space:]]*$' \
+              "$1"
+          }
+          diff <(strip_noise "{{ filename }}") <(strip_noise "{{ latest_file }}") \
             | tee "{{ dest_path }}/{{ inventory_hostname }}/latest/compared.yaml"
       args:
         executable: /bin/bash
@@ -67,6 +76,7 @@
       failed_when: diff_output.rc > 1
       delegate_to: localhost
       notify: Print Fortigate config differences
+
 
     - name: Update latest Fortigate config
       copy:
