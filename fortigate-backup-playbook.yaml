@@ -17,8 +17,8 @@
   vars:
     dest_path: "/root/{{ datacenter }}"
     folder: "{{ dest_path }}/{{ inventory_hostname }}/{{ hostvars['localhost']['backup_date'] }}"
-    filename: "{{ folder }}/backup_{{ hostvars['localhost']['backup_date'] }}_{{ hostvars['localhost']['backup_time'] }}.yaml"
-    latest_file: "{{ dest_path }}/{{ inventory_hostname }}/latest/latest.yaml"
+    filename: "{{ folder }}/backup_{{ hostvars['localhost']['backup_date'] }}_{{ hostvars['localhost']['backup_time'] }}.txt"
+    latest_file: "{{ dest_path }}/{{ inventory_hostname }}/latest/latest.txt"
   collections:
     - fortinet.fortios
 
@@ -44,7 +44,7 @@
         params:
           scope: global
           password_mask: false
-          file_format: yaml
+          file_format: text
       register: backupinfo
 
     - name: Save Fortigate backup to file
